@@ -1,13 +1,22 @@
 import React from 'react';
 import { 
     StyleSheet, 
-    Text, 
     View, 
-    Button, 
     TouchableHighlight, 
     KeyboardAvoidingView,
     ScrollView,
-    } from 'react-native';
+} from 'react-native';
+import {
+    Container,
+    Header,
+    Left,
+    Title,
+    Body,
+    Content,
+    Button,
+    Text,
+} from 'native-base';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import t from 'tcomb-form-native';
 import moment from 'moment';
 
@@ -49,6 +58,10 @@ const ExpenseOptions = {
 
 class ExpenseScreen extends React.Component {
 
+    static navigationOptions = {
+        header: null,
+    };
+
     constructor(props) {
         super(props);
 
@@ -72,22 +85,33 @@ class ExpenseScreen extends React.Component {
 
     render() {
         return(
-            <ScrollView style={styles.container}>
-                <Text style={styles.title}>Add New Expense</Text>
-                <KeyboardAvoidingView behavior='padding'>
-                <Form
-                    ref="form"
-                    type={ExpenseRecord}
-                    options={ExpenseOptions}
-                />
-                {/* <TouchableHighlight style={styles.button} onPress={this.handleAddPhoto} underlayColor='#99d9f4'>
-                    <Text style={styles.buttonText}>Add photo</Text>
-                </TouchableHighlight> */}
-                    <TouchableHighlight style={styles.button} onPress={this.handleSave} underlayColor='#99d9f4'>
-                        <Text style={styles.buttonText}>Save</Text>
-                    </TouchableHighlight>
-                </KeyboardAvoidingView>
-            </ScrollView>
+            <Container>
+                <Header>
+                    <Left>
+                        <Button transparent onPress={() => this.props.navigation.goBack(null)}>
+                            <Icon style={{ color: '#fff' }} name='arrow-left' />
+                        </Button>
+                    </Left>
+                    <Body>
+                        <Title>Add New Expense</Title>
+                    </Body>
+                </Header>
+                <Content>
+                    <View style={styles.container}>
+                        <KeyboardAvoidingView behavior='padding'>
+                            <Form
+                                ref="form"
+                                type={ExpenseRecord}
+                                options={ExpenseOptions}
+                            />
+                            <Button success rounded block iconLeft onPress={this.handleSave}>
+                                <Icon style={{ color: '#fff', fontSize: 23 }} name='save' />
+                                <Text> Save </Text>
+                            </Button>
+                        </KeyboardAvoidingView>
+                    </View>
+                </Content>
+            </Container>
         );
     }
 }

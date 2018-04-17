@@ -24,6 +24,10 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 
 class HomeScreen extends React.Component {
 
+  static navigationOptions = {
+    header: null,
+  };
+
   constructor(props) {
     super(props);
 
@@ -33,6 +37,7 @@ class HomeScreen extends React.Component {
 
     this.handleSignIn = this.handleSignIn.bind(this);
     this.handleSignOut = this.handleSignOut.bind(this);
+    this.handleNavigate = this.handleNavigate.bind(this);
   }
   
   componentDidMount() {
@@ -77,49 +82,56 @@ class HomeScreen extends React.Component {
       .catch((err) => console.log(err));
   }
 
+  handleNavigate(screenName) {
+    this.props.navigation.navigate(screenName);
+    this.setState({
+      fabActive: false,
+    })
+  }
+  
+
   render() {
     const user = this.state.user;
 
     return (
-      <Container>
-        {
           user ? (
-            <Header>
-              <Left />
-              <Body>
-                <Title>Walleter</Title>
-              </Body>
-              <Right>
-                <Button transparent onPress={this.handleSignOut}>
-                  <Text>Sign Out</Text>
-                </Button>
-              </Right>
-            </Header>
-            <View style={styles.container}>
-              <Text>Hello, {user.givenName} ({user.id})</Text>
-              <Fab
-                active={this.state.fabActive}
-                direction='up'
-                style={{ backgroundColor: '#5067ff'}}
-                position='bottomRight'
-                onPress={() => this.setState({fabActive: !this.state.fabActive})}
-              >
-                { this.state.fabActive ? <Icon name='close' /> : <Icon name='plus' /> }
+            <Container>
+              <Header>
+                <Body>
+                  <Title style={{fontSize: 23}}>Walleter</Title>
+                </Body>
+                <Right>
+                  <Button transparent onPress={this.handleSignOut}>
+                    <Icon style={{ color: '#fff', fontSize: 23 }} name='sign-out' />
+                  </Button>
+                </Right>
+              </Header>
+              <View style={styles.container}>
+                <Text>Hello, {user.givenName} ({user.id})</Text>
+                <Fab
+                  active={this.state.fabActive}
+                  direction='up'
+                  style={{ backgroundColor: '#5067ff'}}
+                  position='bottomRight'
+                  onPress={() => this.setState({fabActive: !this.state.fabActive})}
+                >
+                  { this.state.fabActive ? <Icon name='close' /> : <Icon name='plus' /> }
 
-                <Button 
-                  onPress={() => this.props.navigation.navigate('Expense')}
-                  style={{ backgroundColor: '#dd5144'}}>
-                  <Icon color='#fff' name='beer' />
-                </Button>
+                  <Button 
+                    onPress={() => this.handleNavigate('Expense')}
+                    style={{ backgroundColor: '#dd5144'}}>
+                    <Icon color='#fff' name='beer' />
+                  </Button>
 
-                <Button 
-                  onPress={() => this.props.navigation.navigate('Income')}
-                  style={{ backgroundColor: '#34a34f'}}>
-                  <Icon color='#fff' name='money' />
-                </Button>
+                  <Button 
+                    onPress={() => this.handleNavigate('Income')}
+                    style={{ backgroundColor: '#34a34f'}}>
+                    <Icon color='#fff' name='money' />
+                  </Button>
 
-              </Fab>
-            </View>
+                </Fab>
+              </View>
+            </Container>
           ) : (
             <GoogleSigninButton
               style={{ width: 312, height: 48 }}
@@ -129,9 +141,7 @@ class HomeScreen extends React.Component {
               // onPress={() => GoogleSignin.signIn().then((user) => this.setState({ user: user }))}
             />
           )
-        }
         
-      </Container>
 
 
       // <View style={styles.container}>

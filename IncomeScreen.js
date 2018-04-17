@@ -1,9 +1,21 @@
 import React from 'react';
-import { StyleSheet, Text, View, Button, TouchableHighlight } from 'react-native';
+import { StyleSheet, View, TouchableHighlight } from 'react-native';
 import t from 'tcomb-form-native';
 import firebase from 'react-native-firebase';
 import { GoogleSignin } from 'react-native-google-signin';
 import moment from 'moment';
+import {
+    Container,
+    Header,
+    Content,
+    Left,
+    Right,
+    Body,
+    Title,
+    Button,
+    Text,
+} from 'native-base';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const Form = t.form.Form;
 moment().locale('ID');
@@ -42,6 +54,10 @@ const IncomeOptions = {
 
 class IncomeScreen extends React.Component {
 
+    static navigationOptions = {
+        header: null,
+    };
+
     constructor(props) {
         super(props);
 
@@ -50,7 +66,7 @@ class IncomeScreen extends React.Component {
             incomeAccountsEnum: '',
         }
 
-        this.handlePress = this.handlePress.bind(this);
+        this.handleSave = this.handleSave.bind(this);
     }
 
 
@@ -64,7 +80,7 @@ class IncomeScreen extends React.Component {
         }
     }
 
-    handlePress() {
+    handleSave() {
         const formValues = this.state.formValues;
         if (formValues) {
             const timestamp = new Date().valueOf();
@@ -83,18 +99,32 @@ class IncomeScreen extends React.Component {
     }
     render() {
         return(
-            <View style={styles.container}>
-                <Text style={styles.title}>Add New Income</Text>
-                <Form
-                    ref="form"
-                    type={IncomeRecord}
-                    options={IncomeOptions}
-                    onChange={this.handleFormChange}
-                />
-                <TouchableHighlight style={styles.button} onPress={this.handlePress} underlayColor='#99d9f4'>
-                    <Text style={styles.buttonText}>Save</Text>
-                </TouchableHighlight>
-            </View>
+            <Container>
+                <Header>
+                    <Left>
+                        <Button transparent onPress={() => this.props.navigation.goBack(null)}>
+                            <Icon style={{ color: '#fff', fontSize: 23 }} name='arrow-left' />
+                        </Button>
+                    </Left>
+                    <Body>
+                        <Title style={{ fontSize: 23 }} >Add New Income</Title>
+                    </Body>
+                </Header>
+                <Content>
+                    <View style={styles.container}>
+                        <Form
+                            ref="form"
+                            type={IncomeRecord}
+                            options={IncomeOptions}
+                            onChange={this.handleFormChange}
+                        />
+                        <Button success rounded block iconLeft onPress={this.handleSave}>
+                            <Icon style={{ color: '#fff', fontSize: 23 }} name='save' />
+                            <Text> Save </Text>
+                        </Button>
+                    </View>
+                </Content>
+            </Container>
         );
     }
 
@@ -110,13 +140,6 @@ const styles = StyleSheet.create({
         // alignItems: 'stretch',
         // justifyContent: 'center',
         padding: 20,
-    },
-    title: {
-        fontSize: 24,
-        alignSelf: 'flex-start',
-        fontWeight: 'bold',
-        marginBottom: 20,
-        color: '#00d150',
     },
     buttonText: {
         fontSize: 18,
