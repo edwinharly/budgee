@@ -3,8 +3,6 @@ import {
     StyleSheet, 
     View, 
     TouchableHighlight, 
-    KeyboardAvoidingView,
-    ScrollView,
 } from 'react-native';
 import {
     Container,
@@ -15,25 +13,28 @@ import {
     Content,
     Button,
     Text,
+    Toast,
 } from 'native-base';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import t from 'tcomb-form-native';
+import firebase from 'react-native-firebase';
 import moment from 'moment';
+
+import { addUserExpense } from './firebaseController';
 
 const Form = t.form.Form;
 moment().locale('ID');
 
-const BankEnum = t.enums({
-    1234: 'BNI',
-    2345: 'BCA',
-    CASH: 'CASH',
-})
+// const BankEnum = t.enums({
+//     1234: 'BNI',
+//     2345: 'BCA',
+//     CASH: 'CASH',
+// })
 
 const ExpenseRecord = t.struct({
+    description: t.refinement(t.String, (s) => s.length >= 3),
+    amount: t.refinement(t.Number, (n) => n >= 100),
     recordDate: t.Date,
-    retailer: t.refinement(t.String, (s) => s.length >= 3),
-    total: t.refinement(t.Number, (n) => n >= 100),
-    payment: BankEnum,
 });
 const ExpenseOptions = {
     fields: {
@@ -44,15 +45,29 @@ const ExpenseOptions = {
                 format: (date) => moment(date).format('LL')
             },
         },
-        retailer: {
-            error: 'Retailer length must be at least 3'
+        description: {
+            multiline: true,
+            stylesheet: {
+                ...Form.stylesheet,
+                textbox: {
+                    ...Form.stylesheet.textbox,
+                    normal: {
+                        ...Form.stylesheet.textbox.normal,
+                        height: 150,
+                        textAlignVertical: 'top',
+                    },
+                    error: {
+                        ...Form.stylesheet.textbox.error,
+                        height: 150,
+                        textAlignVertical: 'top',
+                    },
+                },
+            },
+            error: 'Description must contain at least 3 characters',
         },
-        total: {
+        amount: {
             error: 'Total must be greater than 100'
         },
-        payment: {
-            error: 'Payment method is required'
-        }
     }
 };
 
@@ -66,6 +81,8 @@ class ExpenseScreen extends React.Component {
         super(props);
 
         this.state = {
+            user: this.props.navigation.state.params.user,
+            formValues: '',
             photos: [],
         };
 
@@ -73,10 +90,36 @@ class ExpenseScreen extends React.Component {
         this.handleAddPhoto = this.handleAddPhoto.bind(this);
     }
 
+    // async getUser() {
+    //     try {
+    //         const user = await GoogleSignin.currentUserAsync();
+    //         this.user = user;
+    //         this.userCol = firebase.firestore().collection(user.id);
+    //     } catch (err) {
+    //         console.log(err);
+    //     }
+    // }
+
+
     handleSave() {
         const value = this.refs.form.getValue();
-        if (value)
-            console.log(value);
+        if (value) {
+            // console.log(value);
+            addUserExpense(firebase.database(), this.state.user.uid, {
+                description: value.description,
+                amount: value.amount,
+                recordDate: value.recordDate,
+            }).then(() => {
+                this.setState({
+                    formValues: '',
+                });
+                Toast.show({
+                    text: 'The expense record has been added!',
+                    duration: 3000,
+                    type: 'success',
+                });
+            });
+        }
     }
 
     handleAddPhoto() {
@@ -89,26 +132,25 @@ class ExpenseScreen extends React.Component {
                 <Header>
                     <Left>
                         <Button transparent onPress={() => this.props.navigation.goBack(null)}>
-                            <Icon style={{ color: '#fff' }} name='arrow-left' />
+                            <Icon style={{ color: '#fff', fontSize: 23 }} name='arrow-left' />
                         </Button>
                     </Left>
                     <Body>
-                        <Title>Add New Expense</Title>
+                        <Title style={{ fontSize: 23 }}>Add New Expense</Title>
                     </Body>
                 </Header>
-                <Content>
+                <Content contentContainerStyle={{ flex: 1, flexGrow: 1 }}>
                     <View style={styles.container}>
-                        <KeyboardAvoidingView behavior='padding'>
-                            <Form
-                                ref="form"
-                                type={ExpenseRecord}
-                                options={ExpenseOptions}
-                            />
-                            <Button success rounded block iconLeft onPress={this.handleSave}>
-                                <Icon style={{ color: '#fff', fontSize: 23 }} name='save' />
-                                <Text> Save </Text>
-                            </Button>
-                        </KeyboardAvoidingView>
+                        <Form
+                            ref="form"
+                            type={ExpenseRecord}
+                            value={this.state.formValues}
+                            options={ExpenseOptions}
+                        />
+                        <Button primary rounded block iconLeft onPress={this.handleSave}>
+                            <Icon style={{ color: '#fff', fontSize: 23 }} name='save' />
+                            <Text> Save </Text>
+                        </Button>
                     </View>
                 </Content>
             </Container>

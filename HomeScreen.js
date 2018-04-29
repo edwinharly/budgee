@@ -18,9 +18,49 @@ import {
   Left,
   Body,
   Right,
+  H2,
+  H1,
 } from 'native-base';
+import {
+    Col,
+    Row,
+    Grid,
+} from 'react-native-easy-grid';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import t from 'tcomb-form-native';
+import moment from 'moment';
+import { getTotalIncome, getTotalExpense } from './firebaseController';
 
+moment().locale('ID');
+
+const Form = t.form.Form;
+
+const DateFilterForm = t.struct({
+    startDate: t.Date,
+    endDate: t.Date,
+});
+const DateFilterFormOptions = {
+    fields: {
+        startDate: {
+            error: 'Date is required',
+            mode: 'date',
+            config: {
+                format: (date) => moment(date).format('LL')
+            },
+        },
+        endDate: {
+            error: 'Date is required',
+            mode: 'date',
+            config: {
+                format: (date) => moment(date).format('LL')
+            },
+        },
+    }
+};
+const dateFormDefaultValues = {
+    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+};
 
 class HomeScreen extends React.Component {
 
@@ -33,11 +73,16 @@ class HomeScreen extends React.Component {
 
     this.state = {
       fabActive: false,
+      totalIncome: 0,
+      totalExpense: 0,
+      currentIncome: '',
+      currentExpense: '',
     };
 
     this.handleSignIn = this.handleSignIn.bind(this);
     this.handleSignOut = this.handleSignOut.bind(this);
     this.handleNavigate = this.handleNavigate.bind(this);
+    this.handleDateUpdate = this.handleDateUpdate.bind(this);
   }
   
   componentDidMount() {
@@ -46,32 +91,92 @@ class HomeScreen extends React.Component {
 
   async configureGoogleSignIn() {
     try {
-      await GoogleSignin.hasPlayServices({ autoResolve: true });
-      await GoogleSignin.configure({
-        webClientId: '1092976674214-6vh5n12cnulkjr2gvoupflm6g83c3opb.apps.googleusercontent.com',
-        offlineAccess: true,
-      });
+        await GoogleSignin.hasPlayServices({ autoResolve: true });
+        await GoogleSignin.configure({
+            webClientId: '1092976674214-6vh5n12cnulkjr2gvoupflm6g83c3opb.apps.googleusercontent.com',
+            offlineAccess: true,
+        });
 
-      const user = await GoogleSignin.currentUserAsync();
-      this.setState({user});
-
+        const data = await GoogleSignin.currentUserAsync();
+        const credential = firebase.auth.GoogleAuthProvider.credential(data.idToken, data.accessToken);
+        const currentUser = await firebase.auth().signInAndRetrieveDataWithCredential(credential);
+        const userObj = currentUser.user.toJSON();
+        this.setState({ 
+            user: {
+                displayName: userObj.displayName,
+                email: userObj.email,
+                emailVerified: userObj.emailVerified,
+                isAnonymous: userObj.isAnonymous,
+                phoneNumber: userObj.phoneNumber,
+                photoURL: userObj.photoURL,
+                providerId: userObj.providerId,
+                uid: userObj.uid,
+            }
+        });
+        console.log(this.state.user);
     } catch (error) {
       console.log('Play services error', error.code, error.message);
     }
   }
-  
-  
 
-  handleSignIn() {
-    GoogleSignin.signIn()
-      .then((user) => {
-        console.log(user);
-        this.setState({ user: user });
-      })
-      .catch((err) => {
-        console.log('WRONG SIGNIN', err);
-      });
+  async handleSignIn() {
+    try {
+        const data = await GoogleSignin.signIn();
+        const credential = firebase.auth.GoogleAuthProvider.credential(data.idToken, data.accessToken);
+        const currentUser = await firebase.auth().signInAndRetrieveDataWithCredential(credential);
+        const userObj = currentUser.user.toJSON();
+        this.setState({ 
+            user: {
+                displayName: userObj.displayName,
+                email: userObj.email,
+                emailVerified: userObj.emailVerified,
+                isAnonymous: userObj.isAnonymous,
+                phoneNumber: userObj.phoneNumber,
+                photoURL: userObj.photoURL,
+                providerId: userObj.providerId,
+                uid: userObj.uid,
+            }
+        });
+        console.log(this.state.user);
+    } catch(e) {
+        console.error(e);
+    }
   }
+
+
+    handleDateUpdate() {
+        const value = this.refs.form.getValue();
+        // console.log(value);
+        if (value) {
+            const start = value.startDate;
+            const end = value.endDate;
+            getTotalIncome(firebase.database(), this.state.user.uid, start, end)
+                .on('value', (snapshot) => {
+                    console.log(snapshot, null, 4);
+                    // const value = snapshot.map((s) => s.val());
+                    // const totalIncome = value.reduce((acc, i) => {
+                    //     acc += i.amount;
+                    // }, 0);
+                    // this.setState({
+                    //     currentIncome: value,
+                    //     totalIncome: totalIncome,
+                    // });
+                });
+            getTotalExpense(firebase.database(), this.state.user.uid, start, end)
+                .on('value', (snapshot) => {
+                    // console.log('expense snapshot: ' + snapshot);
+                    // const value = snapshot.map((s) => s.val());
+                    // const totalExpense = value.reduce((acc, i) => {
+                    //     acc += i.amount;
+                    // }, 0);
+                    // this.setState({
+                    //     currentExpense: value,
+                    //     totalExpense: totalExpense,
+                    // });
+                });
+        }
+        
+    }
 
   handleSignOut() {
     GoogleSignin.signOut()
@@ -83,20 +188,19 @@ class HomeScreen extends React.Component {
   }
 
   handleNavigate(screenName) {
-    this.props.navigation.navigate(screenName);
+    this.props.navigation.navigate(screenName, { user: this.state.user });
     this.setState({
       fabActive: false,
-    })
+    });
   }
-  
 
   render() {
     const user = this.state.user;
-
     return (
-          user ? (
-            <Container>
-              <Header>
+        user ? (
+        <Container>
+
+            <Header>
                 <Body>
                   <Title style={{fontSize: 23}}>Walleter</Title>
                 </Body>
@@ -105,9 +209,24 @@ class HomeScreen extends React.Component {
                     <Icon style={{ color: '#fff', fontSize: 23 }} name='sign-out' />
                   </Button>
                 </Right>
-              </Header>
-              <View style={styles.container}>
-                <Text>Hello, {user.givenName} ({user.id})</Text>
+            </Header>
+            <Content contentContainerStyle={{ flex: 1, flexGrow: 1 }}>
+                <View style={styles.container}>
+
+                  <Form
+                    ref="form"
+                    type={DateFilterForm}
+                    value={dateFormDefaultValues}
+                    options={DateFilterFormOptions}
+                  />
+                    <Button style={{ padding: 10 }} iconLeft onPress={this.handleDateUpdate}>
+                        <Icon style={{ color: '#fff', fontSize: 23 }} name='refresh' />
+                        <Text> REFRESH </Text>
+                    </Button>
+
+                <H2>Summary</H2>
+                <H1>{this.state.totalIncome - this.state.totalExpense}</H1>
+
                 <Fab
                   active={this.state.fabActive}
                   direction='up'
@@ -130,7 +249,9 @@ class HomeScreen extends React.Component {
                   </Button>
 
                 </Fab>
-              </View>
+
+                </View>
+            </Content>
             </Container>
           ) : (
             <GoogleSigninButton
@@ -138,44 +259,8 @@ class HomeScreen extends React.Component {
               size={GoogleSigninButton.Size.Wide}
               color={GoogleSigninButton.Color.Light}
               onPress={this.handleSignIn}
-              // onPress={() => GoogleSignin.signIn().then((user) => this.setState({ user: user }))}
             />
           )
-        
-
-
-      // <View style={styles.container}>
-      //   {
-      //     user ? (
-      //       <View>
-      //         <Text>
-      //           Hello, {user.givenName}
-      //         </Text>
-      //         <View style={styles.btnContainer}>
-      //             <Button
-      //                 title='Add Income'
-      //                 onPress={() => this.props.navigation.navigate('Income')}
-      //             />
-      //         </View>
-      //         <View style={styles.btnContainer}>
-      //             <Button
-      //                 title='Add Expense'
-      //                 onPress={() => this.props.navigation.navigate('Expense')}
-      //             />
-      //         </View>
-      //         <Button title='Sign Out' onPress={this.handleSignOut} />
-      //       </View>
-      //     ) : (
-      //       <GoogleSigninButton
-      //         style={{ width: 312, height: 48 }}
-      //         size={GoogleSigninButton.Size.Wide}
-      //         color={GoogleSigninButton.Color.Light}
-      //         // onPress={this.handleSignIn}
-      //         onPress={() => GoogleSignin.signIn().then((user) => this.setState({ user: user }))}
-      //       />
-      //     ) 
-      //   }
-      // </View>
     );
   }
 }
@@ -184,14 +269,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 20,
+    // alignItems: 'center',
+    // justifyContent: 'center',
   },
-  btnContainer: {
-    height: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-  }
 });
 
 export default HomeScreen;

@@ -14,22 +14,19 @@ import {
     Title,
     Button,
     Text,
+    Toast,
 } from 'native-base';
 import Icon from 'react-native-vector-icons/FontAwesome';
+
+import { addUserIncome } from './firebaseController';
 
 const Form = t.form.Form;
 moment().locale('ID');
 
-const AccountEnum = t.enums({
-    2420915660: 'BCA',
-});
-
-
 const IncomeRecord = t.struct({
-    recordDate: t.Date,
-    name: t.refinement(t.String, (s) => s.length >= 3),
+    description: t.refinement(t.String, (s) => s.length >= 3),
     amount: t.refinement(t.Number, (n) => n >= 100),
-    payment: AccountEnum,
+    recordDate: t.Date,
 });
 const IncomeOptions = {
     fields: {
@@ -40,15 +37,29 @@ const IncomeOptions = {
                 format: (date) => moment(date).format('LL')
             },
         },
-        name: {
-            error: 'Name length must be at least 3'
+        description: {
+            multiline: true,
+            stylesheet: {
+                ...Form.stylesheet,
+                textbox: {
+                    ...Form.stylesheet.textbox,
+                    normal: {
+                        ...Form.stylesheet.textbox.normal,
+                        height: 150,
+                        textAlignVertical: 'top',
+                    },
+                    error: {
+                        ...Form.stylesheet.textbox.error,
+                        height: 150,
+                        textAlignVertical: 'top',
+                    },
+                },
+            },
+            error: 'Description must contain at least 3 characters',
         },
         amount: {
-            error: 'Amount must be greater than 100'
+            error: 'Amount must be greater than 100',
         },
-        payment: {
-            error: 'Payment method is required'
-        }
     }
 };
 
@@ -62,39 +73,48 @@ class IncomeScreen extends React.Component {
         super(props);
 
         this.state = {
+            user: this.props.navigation.state.params.user,
             formValues: '',
             incomeAccountsEnum: '',
         }
 
         this.handleSave = this.handleSave.bind(this);
+        this.handleFormChange = this.handleFormChange.bind(this);
     }
 
+    // async getUser() {
+    //     try {
+    //         const user = await GoogleSignin.currentUserAsync();
+    //         this.user = user;
+    //         this.userCol = firebase.firestore().collection(user.id);
+    //     } catch (err) {
+    //         console.log(err);
+    //     }
+    // }
 
-    async getUser() {
-        try {
-            const user = await GoogleSignin.currentUserAsync();
-            this.user = user;
-            this.userCol = firebase.firestore().collection(user.id);
-        } catch (err) {
-            console.log(err);
-        }
+    handleFormChange(value) {
+        this.setState({
+            formValues: value,
+        });
     }
 
     handleSave() {
-        const formValues = this.state.formValues;
-        if (formValues) {
-            const timestamp = new Date().valueOf();
-            this.userCol.add({
-                [timestamp]: {
-                    date: formValues.date,
-                    name: formValues.name,
-                    amount: formValues.amount,
-                    payment: {
-                        // bank: ,
-                        // account: ,
-                    }
-                }
-            })
+        const value = this.refs.form.getValue();
+        if (value) {
+            // console.log(value);
+
+            addUserIncome(firebase.database(), this.state.user.uid, {
+                description: value.description,
+                amount: value.amount,
+                recordDate: value.recordDate,
+            }).then(() => {
+                Toast.show({
+                    text: 'The income record has been added!',
+                    duration: 3000,
+                    type: 'success',
+                });
+                this.setState({ formValues: '' });
+            });
         }
     }
     render() {
@@ -110,15 +130,15 @@ class IncomeScreen extends React.Component {
                         <Title style={{ fontSize: 23 }} >Add New Income</Title>
                     </Body>
                 </Header>
-                <Content>
+                <Content contentContainerStyle={{ flex: 1, flexGrow: 1 }}>
                     <View style={styles.container}>
                         <Form
                             ref="form"
                             type={IncomeRecord}
+                            value={this.state.formValues}
                             options={IncomeOptions}
-                            onChange={this.handleFormChange}
                         />
-                        <Button success rounded block iconLeft onPress={this.handleSave}>
+                        <Button primary rounded block iconLeft onPress={this.handleSave}>
                             <Icon style={{ color: '#fff', fontSize: 23 }} name='save' />
                             <Text> Save </Text>
                         </Button>
@@ -129,7 +149,7 @@ class IncomeScreen extends React.Component {
     }
 
     componentDidMount() {
-        this.getUser();
+        // this.getUser();
     }
 }
 

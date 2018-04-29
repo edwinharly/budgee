@@ -14,6 +14,7 @@ import { StackNavigator } from 'react-navigation';
 import HomeScreen from './HomeScreen';
 import IncomeScreen from './IncomeScreen';
 import ExpenseScreen from './ExpenseScreen';
+import { Root } from 'native-base';
 
 const RootStack = StackNavigator({
   Home: {
@@ -36,6 +37,10 @@ const instructions = Platform.select({
 
 export default class App extends Component {
   render() {
-    return  <RootStack />;
+      return  (
+        <Root>
+            <RootStack />
+        </Root>
+      );
   }
 }
