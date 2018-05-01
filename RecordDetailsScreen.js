@@ -58,26 +58,30 @@ export default class RecordDetailsScreen extends React.Component {
                     </Body>
                 </Header>
                 <Content>
-                    <List 
-                        dataSource={this.ds.cloneWithRows(this.state.records)}
-                        renderRow={(item) =>
-                            <ListItem>
-                                <Body>
-                                    <Text>Rp. {item.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</Text>
-                                    <Text> { moment(new Date(item.recordDate)).format('LL') } </Text>
-                                    <Text note > {item.description} </Text>
-                                </Body>
-                            </ListItem>
-                        }
-                        renderRightHiddenRow={(data, secId, rowId, rowMap) =>
-                            <Button full danger onPress={() => this.deleteRow(secId, rowId, rowMap) }>
-                                <Icon active name='trash' />
-                            </Button>
-                        }
-                        rightOpenValue={-75}
-                        disableRightSwipe={true}
-                    >
-                    </List>
+                    { 
+                        (items && 
+                        <List 
+                            dataSource={this.ds.cloneWithRows(items)}
+                            renderRow={(item) =>
+                                <ListItem>
+                                    <Body>
+                                        <Text>Rp. {item.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</Text>
+                                        <Text> { moment(new Date(item.recordDate)).format('LL') } </Text>
+                                        <Text note > {item.description} </Text>
+                                    </Body>
+                                </ListItem>
+                            }
+                            renderRightHiddenRow={(data, secId, rowId, rowMap) =>
+                                <Button full danger onPress={() => this.deleteRow(secId, rowId, rowMap) }>
+                                    <Icon active name='trash' />
+                                </Button>
+                            }
+                            rightOpenValue={-75}
+                            disableRightSwipe={true}
+                        >
+                        </List>) ||
+                        <Text>You don't have any records yet</Text>
+                    }
                 </Content>
             </Container>
         );
