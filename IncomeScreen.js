@@ -15,8 +15,8 @@ import {
     Button,
     Text,
     Toast,
+    Icon,
 } from 'native-base';
-import Icon from 'react-native-vector-icons/FontAwesome';
 
 import { addUserIncome } from './firebaseController';
 
@@ -59,6 +59,9 @@ const IncomeOptions = {
         },
         amount: {
             error: 'Amount must be greater than 100',
+            config: {
+                format: (value) => value.toLocaleString()
+            }
         },
     }
 };
@@ -101,20 +104,19 @@ class IncomeScreen extends React.Component {
     handleSave() {
         const value = this.refs.form.getValue();
         if (value) {
-            // console.log(value);
-
             addUserIncome(firebase.database(), this.state.user.uid, {
                 description: value.description,
                 amount: value.amount,
-                recordDate: value.recordDate,
+                recordDate: new Date(value.recordDate).getTime(),
             }).then(() => {
+                this.setState({ formValues: '' });
                 Toast.show({
                     text: 'The income record has been added!',
-                    duration: 3000,
+                    duration: 2000,
                     type: 'success',
                 });
-                this.setState({ formValues: '' });
             });
+
         }
     }
     render() {
@@ -123,7 +125,7 @@ class IncomeScreen extends React.Component {
                 <Header>
                     <Left>
                         <Button transparent onPress={() => this.props.navigation.goBack(null)}>
-                            <Icon style={{ color: '#fff', fontSize: 23 }} name='arrow-left' />
+                            <Icon style={{ color: '#fff', fontSize: 23 }} name='md-arrow-back' />
                         </Button>
                     </Left>
                     <Body>
@@ -139,7 +141,7 @@ class IncomeScreen extends React.Component {
                             options={IncomeOptions}
                         />
                         <Button primary rounded block iconLeft onPress={this.handleSave}>
-                            <Icon style={{ color: '#fff', fontSize: 23 }} name='save' />
+                            <Icon style={{ color: '#fff', fontSize: 23 }} name='md-document' />
                             <Text> Save </Text>
                         </Button>
                     </View>

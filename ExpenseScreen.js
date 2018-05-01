@@ -14,8 +14,8 @@ import {
     Button,
     Text,
     Toast,
+    Icon,
 } from 'native-base';
-import Icon from 'react-native-vector-icons/FontAwesome';
 import t from 'tcomb-form-native';
 import firebase from 'react-native-firebase';
 import moment from 'moment';
@@ -66,7 +66,10 @@ const ExpenseOptions = {
             error: 'Description must contain at least 3 characters',
         },
         amount: {
-            error: 'Total must be greater than 100'
+            error: 'Total must be greater than 100',
+            config: {
+                format: (value) => value.toLocaleString()
+            }
         },
     }
 };
@@ -104,18 +107,17 @@ class ExpenseScreen extends React.Component {
     handleSave() {
         const value = this.refs.form.getValue();
         if (value) {
-            // console.log(value);
             addUserExpense(firebase.database(), this.state.user.uid, {
                 description: value.description,
                 amount: value.amount,
-                recordDate: value.recordDate,
+                recordDate: new Date(value.recordDate).getTime(),
             }).then(() => {
                 this.setState({
                     formValues: '',
                 });
                 Toast.show({
                     text: 'The expense record has been added!',
-                    duration: 3000,
+                    duration: 2000,
                     type: 'success',
                 });
             });
@@ -132,7 +134,7 @@ class ExpenseScreen extends React.Component {
                 <Header>
                     <Left>
                         <Button transparent onPress={() => this.props.navigation.goBack(null)}>
-                            <Icon style={{ color: '#fff', fontSize: 23 }} name='arrow-left' />
+                            <Icon style={{ color: '#fff', fontSize: 23 }} name='md-arrow-back' />
                         </Button>
                     </Left>
                     <Body>
@@ -148,7 +150,7 @@ class ExpenseScreen extends React.Component {
                             options={ExpenseOptions}
                         />
                         <Button primary rounded block iconLeft onPress={this.handleSave}>
-                            <Icon style={{ color: '#fff', fontSize: 23 }} name='save' />
+                            <Icon style={{ color: '#fff', fontSize: 23 }} name='md-document' />
                             <Text> Save </Text>
                         </Button>
                     </View>

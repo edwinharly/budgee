@@ -14,6 +14,7 @@ import { StackNavigator } from 'react-navigation';
 import HomeScreen from './HomeScreen';
 import IncomeScreen from './IncomeScreen';
 import ExpenseScreen from './ExpenseScreen';
+import RecordDetailsScreen from './RecordDetailsScreen';
 import { Root } from 'native-base';
 
 const RootStack = StackNavigator({
@@ -25,6 +26,9 @@ const RootStack = StackNavigator({
   },
   Expense: {
     screen: ExpenseScreen,
+  },
+  RecordDetails: {
+    screen: RecordDetailsScreen,
   }
 });
 

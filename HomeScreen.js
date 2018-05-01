@@ -18,15 +18,19 @@ import {
   Left,
   Body,
   Right,
+  H3,
   H2,
   H1,
+  Card,
+  CardItem,
+  Toast,
+  Icon,
 } from 'native-base';
 import {
     Col,
     Row,
     Grid,
 } from 'react-native-easy-grid';
-import Icon from 'react-native-vector-icons/FontAwesome';
 import t from 'tcomb-form-native';
 import moment from 'moment';
 import { getTotalIncome, getTotalExpense } from './firebaseController';
@@ -39,6 +43,10 @@ const DateFilterForm = t.struct({
     startDate: t.Date,
     endDate: t.Date,
 });
+const dateFormDefaultValues = {
+    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+};
 const DateFilterFormOptions = {
     fields: {
         startDate: {
@@ -47,6 +55,7 @@ const DateFilterFormOptions = {
             config: {
                 format: (date) => moment(date).format('LL')
             },
+            blurOnSubmit: true,
         },
         endDate: {
             error: 'Date is required',
@@ -54,13 +63,14 @@ const DateFilterFormOptions = {
             config: {
                 format: (date) => moment(date).format('LL')
             },
+            blurOnSubmit: true,
         },
     }
 };
-const dateFormDefaultValues = {
-    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
-};
+
+// const storedStartDate = await AsyncStorage.getItem('startDate');
+// const storedEndDate = await AsyncStorage.getItem('endDate');
+
 
 class HomeScreen extends React.Component {
 
@@ -79,6 +89,9 @@ class HomeScreen extends React.Component {
       currentExpense: '',
     };
 
+    this.currentDates = dateFormDefaultValues;
+
+    this.configureGoogleSignIn = this.configureGoogleSignIn.bind(this);
     this.handleSignIn = this.handleSignIn.bind(this);
     this.handleSignOut = this.handleSignOut.bind(this);
     this.handleNavigate = this.handleNavigate.bind(this);
@@ -113,7 +126,7 @@ class HomeScreen extends React.Component {
                 uid: userObj.uid,
             }
         });
-        console.log(this.state.user);
+        this.handleDateUpdate();
     } catch (error) {
       console.log('Play services error', error.code, error.message);
     }
@@ -137,7 +150,7 @@ class HomeScreen extends React.Component {
                 uid: userObj.uid,
             }
         });
-        console.log(this.state.user);
+        this.handleDateUpdate();
     } catch(e) {
         console.error(e);
     }
@@ -145,34 +158,73 @@ class HomeScreen extends React.Component {
 
 
     handleDateUpdate() {
-        const value = this.refs.form.getValue();
+        const formValue = this.refs.form.getValue();
         // console.log(value);
-        if (value) {
-            const start = value.startDate;
-            const end = value.endDate;
+        if (formValue) {
+            // get dates from form
+            const start = new Date(formValue.startDate).getTime();
+            const end = new Date(formValue.endDate).getTime();
+
+            // try {
+            //     await AsyncStorage.setItem('startDate', start);
+            //     await AsyncStorage.setItem('endDate', end);
+            // } catch (err) {
+            //     console.log('Error on saving dates to AsyncStorage');
+            // }
+
             getTotalIncome(firebase.database(), this.state.user.uid, start, end)
                 .on('value', (snapshot) => {
-                    console.log(snapshot, null, 4);
-                    // const value = snapshot.map((s) => s.val());
-                    // const totalIncome = value.reduce((acc, i) => {
-                    //     acc += i.amount;
-                    // }, 0);
-                    // this.setState({
-                    //     currentIncome: value,
-                    //     totalIncome: totalIncome,
-                    // });
+                    console.log('income');
+                    console.log(snapshot.val());
+                    
+                    const obj = snapshot.val();
+                    if (obj) {
+                        const income = Object.entries(obj).reduce((total, pair) => {
+                            const [key, val] = pair;
+                            return total + val['amount'];
+                        }, 0);
+                        
+                        this.setState({
+                            currentIncome: obj,
+                            totalIncome: income,
+                        });
+                    } else {
+                        this.setState({
+                            currentIncome: '',
+                            totalIncome: 0,
+                        });
+                    }
+                    Toast.show({
+                        text: 'Total incomes has been updated!',
+                        duration: 2000,
+                    });
                 });
             getTotalExpense(firebase.database(), this.state.user.uid, start, end)
                 .on('value', (snapshot) => {
-                    // console.log('expense snapshot: ' + snapshot);
-                    // const value = snapshot.map((s) => s.val());
-                    // const totalExpense = value.reduce((acc, i) => {
-                    //     acc += i.amount;
-                    // }, 0);
-                    // this.setState({
-                    //     currentExpense: value,
-                    //     totalExpense: totalExpense,
-                    // });
+                    console.log('expense');
+                    console.log(snapshot.val());
+
+                    const obj = snapshot.val();
+                    if (obj) {
+                        const expense = Object.entries(obj).reduce((total, pair) => {
+                            const [key, val] = pair;
+                            return total + val['amount'];
+                        }, 0);
+
+                        this.setState({
+                            currentExpense: obj,
+                            totalExpense: expense,
+                        });
+                    } else {
+                        this.setState({
+                            currentExpense: '',
+                            totalExpense: 0,
+                        });
+                    }
+                    Toast.show({
+                        text: 'Total expenses has been updated!',
+                        duration: 2000,
+                    });
                 });
         }
         
@@ -182,13 +234,20 @@ class HomeScreen extends React.Component {
     GoogleSignin.signOut()
       .then(() => {
         console.log('out');
-        this.setState({ user: '' });
+          this.setState({ 
+              user: '',
+              fabActive: false,
+              totalIncome: 0,
+              totalExpense: 0,
+              currentIncome: '',
+              currentExpense: '',
+          });
       })
       .catch((err) => console.log(err));
   }
 
-  handleNavigate(screenName) {
-    this.props.navigation.navigate(screenName, { user: this.state.user });
+  handleNavigate(screenName, data) {
+    this.props.navigation.navigate(screenName, data);
     this.setState({
       fabActive: false,
     });
@@ -196,71 +255,161 @@ class HomeScreen extends React.Component {
 
   render() {
     const user = this.state.user;
+    const sum = this.state.totalIncome - this.state.totalExpense;
     return (
         user ? (
         <Container>
 
             <Header>
                 <Body>
-                  <Title style={{fontSize: 23}}>Walleter</Title>
+                  <Title style={{fontSize: 23}}>BUDGEE</Title>
                 </Body>
                 <Right>
                   <Button transparent onPress={this.handleSignOut}>
-                    <Icon style={{ color: '#fff', fontSize: 23 }} name='sign-out' />
+                    <Icon style={{ color: '#fff', fontSize: 23 }} name='md-log-out' />
                   </Button>
                 </Right>
             </Header>
-            <Content contentContainerStyle={{ flex: 1, flexGrow: 1 }}>
-                <View style={styles.container}>
-
-                  <Form
-                    ref="form"
-                    type={DateFilterForm}
-                    value={dateFormDefaultValues}
-                    options={DateFilterFormOptions}
-                  />
-                    <Button style={{ padding: 10 }} iconLeft onPress={this.handleDateUpdate}>
-                        <Icon style={{ color: '#fff', fontSize: 23 }} name='refresh' />
-                        <Text> REFRESH </Text>
-                    </Button>
-
-                <H2>Summary</H2>
-                <H1>{this.state.totalIncome - this.state.totalExpense}</H1>
-
-                <Fab
-                  active={this.state.fabActive}
-                  direction='up'
-                  style={{ backgroundColor: '#5067ff'}}
-                  position='bottomRight'
-                  onPress={() => this.setState({fabActive: !this.state.fabActive})}
-                >
-                  { this.state.fabActive ? <Icon name='close' /> : <Icon name='plus' /> }
-
-                  <Button 
-                    onPress={() => this.handleNavigate('Expense')}
-                    style={{ backgroundColor: '#dd5144'}}>
-                    <Icon color='#fff' name='beer' />
-                  </Button>
-
-                  <Button 
-                    onPress={() => this.handleNavigate('Income')}
-                    style={{ backgroundColor: '#34a34f'}}>
-                    <Icon color='#fff' name='money' />
-                  </Button>
-
-                </Fab>
-
-                </View>
+            <Content style={styles.container} contentContainerStyle={{ flexGrow: 1 }}>
+                    <Text style={{
+                        fontSize: 22,
+                        marginBottom: 10,
+                        alignSelf: 'center',
+                    }}>
+                        Hello, <Text style={{color: '#4286f4', fontSize: 22, fontWeight: 'bold'}}>{user.displayName}</Text>!
+                    </Text>
+                    <Card style={{ borderWidth: 0, flexGrow: 0 }}>
+                        <CardItem bordered >
+                            <Body>
+                                <Form
+                                    ref="form"
+                                    type={DateFilterForm}
+                                    value={this.currentDates}
+                                    options={DateFilterFormOptions}
+                                    onChange={(value) => this.currentDates = value}
+                                />
+                                <Button block style={{ padding: 10, marginBottom: 10 }} iconLeft onPress={() => this.handleDateUpdate()}>
+                                    <Icon style={{ color: '#fff', fontSize: 23 }} name='refresh' />
+                                    <Text> REFRESH </Text>
+                                </Button>
+                            </Body>
+                        </CardItem>
+                        <CardItem 
+                            bordered 
+                            button 
+                            onPress={() => this.handleNavigate('RecordDetails', { user: this.state.user, records: this.state.currentIncome })}
+                        >
+                            <Body>
+                                <H3>Incomes</H3>
+                                <Text
+                                    style={{
+                                        color: '#00ce0a',
+                                        fontSize: 26,
+                                    }}
+                                >Rp {this.state.totalIncome.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</Text>
+                            </Body>
+                        </CardItem>
+                        <CardItem 
+                            bordered 
+                            button 
+                            onPress={() => this.handleNavigate('RecordDetails', { user: this.state.user, records: this.state.currentExpense })}
+                        >
+                            <Body>
+                                <H3>Expenses</H3>
+                                <Text
+                                    style={{
+                                        color: 'red',
+                                        fontSize: 26,
+                                    }}
+                                >Rp {this.state.totalExpense.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</Text>
+                            </Body>
+                        </CardItem>
+                        <CardItem 
+                            bordered 
+                            button 
+                            onPress={() => this.handleNavigate('RecordDetails', 
+                                                { user: this.state.user, 
+                                                    records: { ...this.state.currentExpense, ...this.state.currentIncome } 
+                                                })}
+                        >
+                            <Body>
+                                <H2>Summary</H2>
+                                <Text
+                                    style={{
+                                        color: '#4286f4',
+                                        fontSize: 30,
+                                    }}
+                                >Rp {sum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</Text>
+                                { /*
+                                    sum < 1 ? (
+                                        <Text
+                                            style={{
+                                                color: 'red',
+                                                fontSize: 30,
+                                            }}
+                                        >Rp {sum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</Text>
+                                    ) : (
+                                        <Text
+                                            style={{
+                                                color: '#4286f4',
+                                                fontSize: 30,
+                                            }}
+                                        >Rp {sum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</Text>
+                                    ) */
+                                }
+                            </Body>
+                        </CardItem>
+                    </Card>
             </Content>
+                    <Fab
+                      active={this.state.fabActive}
+                      direction='up'
+                      style={{ backgroundColor: '#5067ff'}}
+                      position='bottomRight'
+                      onPress={() => this.setState({fabActive: !this.state.fabActive})}
+                    >
+                      { this.state.fabActive ? <Icon name='md-close' /> : <Icon name='md-add' /> }
+
+                      <Button 
+                        onPress={() => this.handleNavigate('Expense', { user: this.state.user })}
+                        style={{ backgroundColor: '#dd5144'}}>
+                        <Icon color='#fff' name='md-cart' />
+                      </Button>
+
+                      <Button 
+                        onPress={() => this.handleNavigate('Income', { user: this.state.user })}
+                        style={{ backgroundColor: '#34a34f'}}>
+                        <Icon color='#fff' name='md-cash' />
+                      </Button>
+
+                    </Fab>
+        </Container>
+        ) : (
+            <Container style={{alignItems: 'center', justifyContent: 'center' }}>
+                <Text
+                    style={{
+                        fontSize: 32,
+                        fontWeight: 'bold',
+                        color: '#4286f4',
+                        marginTop: 'auto',
+                    }}
+                >
+                    BUDGEE
+                </Text>
+                <GoogleSigninButton
+                    style={{ 
+                        width: 312, height: 48,
+                        marginTop: 'auto',
+                        marginBottom: 'auto',
+                        marginLeft: 'auto',
+                        marginRight: 'auto',
+                    }}
+                  size={GoogleSigninButton.Size.Wide}
+                  color={GoogleSigninButton.Color.Light}
+                  onPress={this.handleSignIn}
+                />
             </Container>
-          ) : (
-            <GoogleSigninButton
-              style={{ width: 312, height: 48 }}
-              size={GoogleSigninButton.Size.Wide}
-              color={GoogleSigninButton.Color.Light}
-              onPress={this.handleSignIn}
-            />
-          )
+        )
     );
   }
 }
@@ -268,6 +417,7 @@ class HomeScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    flexGrow: 1,
     backgroundColor: '#fff',
     padding: 20,
     // alignItems: 'center',

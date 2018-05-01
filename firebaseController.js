@@ -33,9 +33,9 @@ export function addUserExpense(db, userId, recordData) {
 }
 
 export function getTotalIncome(db, userId, startDate, endDate) {
-    return db.ref('users/' + userId + '/income/').orderByChild('recordDate').startAt(startDate);
+    return db.ref('users/' + userId + '/income/').orderByChild('recordDate').startAt(startDate).endAt(endDate);
 }
 
 export function getTotalExpense(db, userId, startDate, endDate) {
-    return db.ref('users/' + userId + '/expense/').orderByChild('recordDate').startAt(startDate);
+    return db.ref('users/' + userId + '/expense/').orderByChild('recordDate').startAt(startDate).endAt(endDate);
 }
