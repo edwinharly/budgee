@@ -3,6 +3,7 @@ import {
     StyleSheet, 
     View, 
     TouchableHighlight, 
+    Image,
 } from 'react-native';
 import {
     Container,
@@ -16,9 +17,11 @@ import {
     Toast,
     Icon,
 } from 'native-base';
+import PhotoUpload from 'react-native-photo-upload';
 import t from 'tcomb-form-native';
 import firebase from 'react-native-firebase';
 import moment from 'moment';
+
 
 import { addUserExpense } from './firebaseController';
 
@@ -149,6 +152,11 @@ class ExpenseScreen extends React.Component {
                             value={this.state.formValues}
                             options={ExpenseOptions}
                         />
+                        <PhotoUpload>
+                            <Image
+                                source={require('./static/upload_icon.png')}
+                            />
+                        </PhotoUpload>
                         <Button primary rounded block iconLeft onPress={this.handleSave}>
                             <Icon style={{ color: '#fff', fontSize: 23 }} name='md-document' />
                             <Text> Save </Text>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, TouchableHighlight } from 'react-native';
+import { StyleSheet, View, TouchableHighlight, Image } from 'react-native';
 import t from 'tcomb-form-native';
 import firebase from 'react-native-firebase';
 import { GoogleSignin } from 'react-native-google-signin';
@@ -17,6 +17,7 @@ import {
     Toast,
     Icon,
 } from 'native-base';
+import PhotoUpload from 'react-native-photo-upload';
 
 import { addUserIncome } from './firebaseController';
 
@@ -140,6 +141,11 @@ class IncomeScreen extends React.Component {
                             value={this.state.formValues}
                             options={IncomeOptions}
                         />
+                        <PhotoUpload>
+                            <Image
+                                source={require('./static/upload_icon.png')}
+                            />
+                        </PhotoUpload>
                         <Button primary rounded block iconLeft onPress={this.handleSave}>
                             <Icon style={{ color: '#fff', fontSize: 23 }} name='md-document' />
                             <Text> Save </Text>
