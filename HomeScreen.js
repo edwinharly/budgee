@@ -116,11 +116,11 @@ class HomeScreen extends React.Component {
                 endDate: new Date(end),
             };
         } else {
-            return null;
+            return undefined;
         }
       } catch(err) {
         console.log('error fetching dates from storage');
-        return null;
+        return undefined;
       }
   }
 
