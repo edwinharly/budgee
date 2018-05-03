@@ -1,8 +1,9 @@
 import React from 'react';
 import { 
-  StyleSheet, 
-  View, 
-  DatePickerAndroid 
+    StyleSheet, 
+    View, 
+    DatePickerAndroid,
+    AsyncStorage,
 } from 'react-native';
 import firebase from 'react-native-firebase';
 import { GoogleSignin, GoogleSigninButton } from 'react-native-google-signin';
@@ -74,6 +75,7 @@ const DateFilterFormOptions = {
 
 class HomeScreen extends React.Component {
 
+  // hide react-navigation header
   static navigationOptions = {
     header: null,
   };
@@ -89,17 +91,46 @@ class HomeScreen extends React.Component {
       currentExpense: '',
     };
 
-    this.currentDates = dateFormDefaultValues;
+    this.currentDates = this.fetchDatesFromStorage() || dateFormDefaultValues;
 
     this.configureGoogleSignIn = this.configureGoogleSignIn.bind(this);
     this.handleSignIn = this.handleSignIn.bind(this);
     this.handleSignOut = this.handleSignOut.bind(this);
     this.handleNavigate = this.handleNavigate.bind(this);
     this.handleDateUpdate = this.handleDateUpdate.bind(this);
+    this.fetchDatesFromStorage = this.fetchDatesFromStorage.bind(this);
+    this.storeDatesToStorage = this.storeDatesToStorage.bind(this);
   }
   
   componentDidMount() {
     this.configureGoogleSignIn();
+  }
+
+  async fetchDatesFromStorage() {
+      try {
+        const start = await AsyncStorage.getItem('startDate');
+        const end = await AsyncStorage.getItem('endDate');
+        if (start && end) {
+            return {
+                startDate: new Date(start),
+                endDate: new Date(end),
+            };
+        } else {
+            return null;
+        }
+      } catch(err) {
+        console.log('error fetching dates from storage');
+        return null;
+      }
+  }
+
+  async storeDatesToStorage(start, end) {
+      try {
+        await AsyncStorage.setItem('startDate', start);
+        await AsyncStorage.setItem('endDate', end);
+      } catch(err) {
+          console.log('error storing dates to storage');
+      }
   }
 
   async configureGoogleSignIn() {
@@ -164,13 +195,7 @@ class HomeScreen extends React.Component {
             // get dates from form
             const start = new Date(formValue.startDate).getTime();
             const end = new Date(formValue.endDate).getTime();
-
-            // try {
-            //     await AsyncStorage.setItem('startDate', start);
-            //     await AsyncStorage.setItem('endDate', end);
-            // } catch (err) {
-            //     console.log('Error on saving dates to AsyncStorage');
-            // }
+            this.storeDatesToStorage(start, end);
 
             getTotalIncome(firebase.database(), this.state.user.uid, start, end)
                 .on('value', (snapshot) => {
