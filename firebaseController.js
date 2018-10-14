@@ -39,3 +39,39 @@ export function getTotalIncome(db, userId, startDate, endDate) {
 export function getTotalExpense(db, userId, startDate, endDate) {
     return db.ref('users/' + userId + '/expense/').orderByChild('recordDate').startAt(startDate).endAt(endDate);
 }
+
+export function deleteIncomeRecord(db, userId, recordData) {
+    const recordId = recordData[0];
+    const oldData = recordData[1];
+    let deletedRecord = {
+        ...oldData,
+        deleted: true,
+    };
+    let updates = {};
+    updates['/users/' + userId + '/income/' + recordId] = deletedRecord;
+
+    return db.ref().update(updates);
+}
+
+export function deleteExpenseRecord(db, userId, recordData) {
+    const recordId = recordData[0];
+    const oldData = recordData[1];
+    let deletedRecord = {
+        ...oldData,
+        deleted: true,
+    };
+    let updates = {};
+    updates['/users/' + userId + '/expense/' + recordId] = deletedRecord;
+
+    return db.ref().update(updates);
+}
+
+export function updateUserIncome(db, userId, recordId, recordData) {
+    updates['/users/' + userId + '/income/' + recordId] = recordData;
+    return db.ref().update(updates);
+}
+
+export function updateUserExpense(db, userId, recordId, recordData) {
+    updates['/users/' + userId + '/expense/' + recordId] = recordData;
+    return db.ref().update(updates);
+}

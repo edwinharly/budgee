@@ -1,4 +1,4 @@
-package com.walleter;
+package com.harly.budgee;
 
 import android.app.Application;
 

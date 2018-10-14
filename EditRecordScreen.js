@@ -1,35 +1,46 @@
 import React from 'react';
-import { StyleSheet, View, TouchableHighlight, Image } from 'react-native';
-import t from 'tcomb-form-native';
-import firebase from 'react-native-firebase';
-import { GoogleSignin } from 'react-native-google-signin';
-import moment from 'moment';
+import { 
+    StyleSheet, 
+    View, 
+    TouchableHighlight, 
+    Image,
+    ToastAndroid
+} from 'react-native';
 import {
     Container,
     Header,
-    Content,
     Left,
-    Right,
-    Body,
     Title,
+    Body,
+    Content,
     Button,
     Text,
     Toast,
     Icon,
 } from 'native-base';
 import PhotoUpload from 'react-native-photo-upload';
+import t from 'tcomb-form-native';
+import firebase from 'react-native-firebase';
+import moment from 'moment';
 
-import { addUserIncome } from './firebaseController';
+
+import { updateUserExpense, updateUserIncome } from './firebaseController';
 
 const Form = t.form.Form;
 moment().locale('ID');
 
-const IncomeRecord = t.struct({
+const ExpenseType = t.enums({
+    CREDIT: 'Credit',
+    CASH: 'Cash',
+});
+
+const ExpenseRecord = t.struct({
     description: t.refinement(t.String, (s) => s.length >= 3),
     amount: t.refinement(t.Number, (n) => n >= 100),
+    type: t.refinement(ExpenseType, (t) => t === 'CREDIT' || t === 'CASH'),
     recordDate: t.Date,
 });
-const IncomeOptions = {
+const ExpenseOptions = {
     fields: {
         recordDate: {
             error: 'Date is required',
@@ -59,15 +70,18 @@ const IncomeOptions = {
             error: 'Description must contain at least 3 characters',
         },
         amount: {
-            error: 'Amount must be greater than 100',
+            error: 'Total must be greater than 100',
             config: {
                 format: (value) => value.toLocaleString()
             }
         },
+        type: {
+            error: 'Please pick one of the available types',
+        },
     }
 };
 
-class IncomeScreen extends React.Component {
+class EditRecordScreen extends React.Component {
 
     static navigationOptions = {
         header: null,
@@ -77,13 +91,31 @@ class IncomeScreen extends React.Component {
         super(props);
 
         this.state = {
-            user: this.props.navigation.state.params.user,
-            formValues: '',
-            incomeAccountsEnum: '',
+            formValues: this.props.navigation.state.params.oldRecord,
+            photos: [],
+        };
+
+        this.user = this.props.navigation.state.params.user;
+        this.recordId = this.props.navigation.state.params.recordId;
+        this.oldRecord = this.props.navigation.state.params.oldRecord;
+        this.type = this.props.navigation.state.params.type;
+
+        console.log(this.oldRecord);
+        /*
+        {
+            RECORDID1: {
+                amount : AMOUNT,
+                description: DESCRIPTION,
+                recordDate: RECORDDATE,
+            },
+            RECORDID2: {
+                ...
+            }
         }
+        */
 
         this.handleSave = this.handleSave.bind(this);
-        this.handleFormChange = this.handleFormChange.bind(this);
+        this.handleAddPhoto = this.handleAddPhoto.bind(this);
     }
 
     // async getUser() {
@@ -96,31 +128,39 @@ class IncomeScreen extends React.Component {
     //     }
     // }
 
-    handleFormChange(value) {
-        this.setState({
-            formValues: value,
-        });
-    }
 
     handleSave() {
         const value = this.refs.form.getValue();
         if (value) {
-            addUserIncome(firebase.database(), this.state.user.uid, {
+
+            updateUserExpense(firebase.database(), this.user.uid, this.recordId, value)
+                .then(() => {
+                    
+                });
+
+            addUserExpense(firebase.database(), this.state.user.uid, {
                 description: value.description,
                 amount: value.amount,
                 recordDate: new Date(value.recordDate).getTime(),
+                type: value.type,
             }).then(() => {
-                this.setState({ formValues: '' });
-                ToastAndroid.show('The income record has been addded!', ToastAndroid.LONG);
+                this.setState({
+                    formValues: '',
+                });
+                ToastAndroid.show('The expense record has been addded!', ToastAndroid.LONG);
                 // Toast.show({
-                //     text: 'The income record has been added!',
+                //     text: 'The expense record has been added!',
                 //     duration: 2000,
                 //     type: 'success',
                 // });
             });
-
         }
     }
+
+    handleAddPhoto() {
+        
+    }
+
     render() {
         return(
             <Container>
@@ -131,16 +171,16 @@ class IncomeScreen extends React.Component {
                         </Button>
                     </Left>
                     <Body>
-                        <Title style={{ fontSize: 23 }} >Add New Income</Title>
+                        <Title style={{ fontSize: 23 }}>Add New Expense</Title>
                     </Body>
                 </Header>
                 <Content contentContainerStyle={{ flex: 1, flexGrow: 1 }}>
                     <View style={styles.container}>
                         <Form
                             ref="form"
-                            type={IncomeRecord}
+                            type={ExpenseRecord}
                             value={this.state.formValues}
-                            options={IncomeOptions}
+                            options={ExpenseOptions}
                         />
                         <PhotoUpload>
                             <Image
@@ -156,10 +196,6 @@ class IncomeScreen extends React.Component {
             </Container>
         );
     }
-
-    componentDidMount() {
-        // this.getUser();
-    }
 }
 
 const styles = StyleSheet.create({
@@ -169,6 +205,13 @@ const styles = StyleSheet.create({
         // alignItems: 'stretch',
         // justifyContent: 'center',
         padding: 20,
+    },
+    title: {
+        fontSize: 24,
+        alignSelf: 'flex-start',
+        fontWeight: 'bold',
+        marginBottom: 20,
+        color: '#d10007',
     },
     buttonText: {
         fontSize: 18,
@@ -187,4 +230,5 @@ const styles = StyleSheet.create({
     },
 });
 
-export default IncomeScreen;
+export default EditRecordScreen;
+
