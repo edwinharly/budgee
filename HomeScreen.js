@@ -1,8 +1,10 @@
 import React from 'react';
 import { 
-  StyleSheet, 
-  View, 
-  DatePickerAndroid 
+    StyleSheet, 
+    View, 
+    DatePickerAndroid,
+    AsyncStorage,
+    ToastAndroid,
 } from 'react-native';
 import firebase from 'react-native-firebase';
 import { GoogleSignin, GoogleSigninButton } from 'react-native-google-signin';
@@ -33,7 +35,7 @@ import {
 } from 'react-native-easy-grid';
 import t from 'tcomb-form-native';
 import moment from 'moment';
-import { getTotalIncome, getTotalExpense } from './firebaseController';
+import { getTotalIncome, getTotalExpense, deleteExpenseRecord, deleteIncomeRecord } from './firebaseController';
 
 moment().locale('ID');
 
@@ -74,6 +76,7 @@ const DateFilterFormOptions = {
 
 class HomeScreen extends React.Component {
 
+  // hide react-navigation header
   static navigationOptions = {
     header: null,
   };
@@ -90,16 +93,54 @@ class HomeScreen extends React.Component {
     };
 
     this.currentDates = dateFormDefaultValues;
+    // this.currentDates = this.fetchDatesFromStorage() || dateFormDefaultValues;
 
     this.configureGoogleSignIn = this.configureGoogleSignIn.bind(this);
     this.handleSignIn = this.handleSignIn.bind(this);
     this.handleSignOut = this.handleSignOut.bind(this);
     this.handleNavigate = this.handleNavigate.bind(this);
     this.handleDateUpdate = this.handleDateUpdate.bind(this);
+    this.fetchDatesFromStorage = this.fetchDatesFromStorage.bind(this);
+    this.storeDatesToStorage = this.storeDatesToStorage.bind(this);
+    this.handleDeleteExpenseRecord = this.handleDeleteExpenseRecord.bind(this);
+    this.handleDeleteIncomeRecord = this.handleDeleteIncomeRecord.bind(this);
   }
   
   componentDidMount() {
     this.configureGoogleSignIn();
+  }
+
+  // FIX: need fix
+  async fetchDatesFromStorage() {
+      try {
+        const start = await AsyncStorage.getItem('startDate');
+        const end = await AsyncStorage.getItem('endDate');
+        if (start && end) {
+            console.log(start);
+            console.log(end);
+            const startDate = new Date(start);
+            const endDate = new Date(end);
+            console.log('fetched startDate & endDate: ' + startDate + ' ' + endDate);
+            return {
+                startDate: startDate,
+                endDate: endDate,
+            };
+        } else {
+            return undefined;
+        }
+      } catch(err) {
+        console.log('error fetching dates from storage');
+        return undefined;
+      }
+  }
+
+  async storeDatesToStorage(start, end) {
+      try {
+        await AsyncStorage.setItem('startDate', start + '');
+        await AsyncStorage.setItem('endDate', end + '');
+      } catch(err) {
+          console.log('error storing dates to storage: ' + err);
+      }
   }
 
   async configureGoogleSignIn() {
@@ -164,18 +205,10 @@ class HomeScreen extends React.Component {
             // get dates from form
             const start = new Date(formValue.startDate).getTime();
             const end = new Date(formValue.endDate).getTime();
-
-            // try {
-            //     await AsyncStorage.setItem('startDate', start);
-            //     await AsyncStorage.setItem('endDate', end);
-            // } catch (err) {
-            //     console.log('Error on saving dates to AsyncStorage');
-            // }
+            this.storeDatesToStorage(start, end);
 
             getTotalIncome(firebase.database(), this.state.user.uid, start, end)
                 .on('value', (snapshot) => {
-                    console.log('income');
-                    console.log(snapshot.val());
                     
                     const obj = snapshot.val();
                     if (obj) {
@@ -194,15 +227,11 @@ class HomeScreen extends React.Component {
                             totalIncome: 0,
                         });
                     }
-                    Toast.show({
-                        text: 'Total incomes has been updated!',
-                        duration: 2000,
-                    });
+                    ToastAndroid.show('Total incomes has been updated!', ToastAndroid.LONG);
                 });
+
             getTotalExpense(firebase.database(), this.state.user.uid, start, end)
                 .on('value', (snapshot) => {
-                    console.log('expense');
-                    console.log(snapshot.val());
 
                     const obj = snapshot.val();
                     if (obj) {
@@ -221,10 +250,7 @@ class HomeScreen extends React.Component {
                             totalExpense: 0,
                         });
                     }
-                    Toast.show({
-                        text: 'Total expenses has been updated!',
-                        duration: 2000,
-                    });
+                    ToastAndroid.show('Total expenses has been updated!', ToastAndroid.LONG);
                 });
         }
         
@@ -251,6 +277,19 @@ class HomeScreen extends React.Component {
     this.setState({
       fabActive: false,
     });
+  }
+
+  handleDeleteIncomeRecord(recordData) {
+    deleteIncomeRecord(firebase.database(), this.state.user.uid, recordData)
+        // .on('value', (snapshot) => {
+        //     console.log(snapshot.val());
+        // })
+  }
+  handleDeleteExpenseRecord(recordData) {
+    deleteIncomeRecord(firebase.database(), this.state.user.uid, recordData)
+        // .on('value', (snapshot) => {
+        //     console.log(snapshot.val());
+        // })
   }
 
   render() {
@@ -297,7 +336,12 @@ class HomeScreen extends React.Component {
                         <CardItem 
                             bordered 
                             button 
-                            onPress={() => this.handleNavigate('RecordDetails', { user: this.state.user, records: this.state.currentIncome })}
+                            onPress={() => this.handleNavigate('RecordDetails', { 
+                                                                    user: this.state.user, 
+                                                                    records: this.state.currentIncome, 
+                                                                    deleteHandler: this.handleDeleteIncomeRecord, 
+                                                                    type: 'INCOME',
+                                                                })}
                         >
                             <Body>
                                 <H3>Incomes</H3>
@@ -312,7 +356,12 @@ class HomeScreen extends React.Component {
                         <CardItem 
                             bordered 
                             button 
-                            onPress={() => this.handleNavigate('RecordDetails', { user: this.state.user, records: this.state.currentExpense })}
+                            onPress={() => this.handleNavigate('RecordDetails', { 
+                                                                user: this.state.user, 
+                                                                records: this.state.currentExpense, 
+                                                                deleteHandler: this.handleDeleteExpenseRecord,
+                                                                type: 'EXPENSE',
+                                                            })}
                         >
                             <Body>
                                 <H3>Expenses</H3>
@@ -329,7 +378,8 @@ class HomeScreen extends React.Component {
                             button 
                             onPress={() => this.handleNavigate('RecordDetails', 
                                                 { user: this.state.user, 
-                                                    records: { ...this.state.currentExpense, ...this.state.currentIncome } 
+                                                    records: { ...this.state.currentExpense, ...this.state.currentIncome },
+                                                    type: 'ALL',
                                                 })}
                         >
                             <Body>

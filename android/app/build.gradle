@@ -99,7 +99,7 @@ android {
     buildToolsVersion "23.0.1"
 
     defaultConfig {
-        applicationId "com.walleter"
+        applicationId "com.harly.budgee"
         minSdkVersion 16
         targetSdkVersion 22
         versionCode 1
@@ -150,6 +150,9 @@ android {
 }
 
 dependencies {
+    compile project(':react-native-fs')
+    compile project(':react-native-image-resizer')
+    compile project(':react-native-image-picker')
     implementation project(':react-native-vector-icons')
     implementation(project(':react-native-google-signin')) {
         exclude group: "com.google.android.gms"

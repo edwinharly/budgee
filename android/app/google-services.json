@@ -8,12 +8,64 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:1092976674214:android:2191bb1eee27344d",
+        "android_client_info": {
+          "package_name": "com.harly.budgee"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1092976674214-pm9ko24ni6a4msnumj5k2kofv4kg1sur.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.harly.budgee",
+            "certificate_hash": "4a4056a537094bdb9745cb225776f65125780cd6"
+          }
+        },
+        {
+          "client_id": "1092976674214-6vh5n12cnulkjr2gvoupflm6g83c3opb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1M7to6mzH3eILXlP6ZPSek4S-9RnpzrY"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1092976674214-6vh5n12cnulkjr2gvoupflm6g83c3opb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:1092976674214:android:68850ac5f273903d",
         "android_client_info": {
           "package_name": "com.walleter"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "1092976674214-nu8r39hjsv5014mferqimqpcc9of85eb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.walleter",
+            "certificate_hash": "f06eec5f5e10460f313111ca9d17b41a2e5cc040"
+          }
+        },
         {
           "client_id": "1092976674214-co3bar256hgjf9mu1q6kika847j2al7e.apps.googleusercontent.com",
           "client_type": 1,

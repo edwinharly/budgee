@@ -15,6 +15,8 @@ import HomeScreen from './HomeScreen';
 import IncomeScreen from './IncomeScreen';
 import ExpenseScreen from './ExpenseScreen';
 import RecordDetailsScreen from './RecordDetailsScreen';
+import EditRecordScreen from './EditRecordScreen';
+
 import { Root } from 'native-base';
 
 const RootStack = StackNavigator({
@@ -29,7 +31,10 @@ const RootStack = StackNavigator({
   },
   RecordDetails: {
     screen: RecordDetailsScreen,
-  }
+  },
+  EditRecord: {
+    screen: EditRecordScreen,
+  },
 });
 
 const instructions = Platform.select({

@@ -3,6 +3,8 @@ import {
     StyleSheet, 
     View, 
     TouchableHighlight, 
+    Image,
+    ToastAndroid
 } from 'react-native';
 import {
     Container,
@@ -16,24 +18,26 @@ import {
     Toast,
     Icon,
 } from 'native-base';
+import PhotoUpload from 'react-native-photo-upload';
 import t from 'tcomb-form-native';
 import firebase from 'react-native-firebase';
 import moment from 'moment';
+
 
 import { addUserExpense } from './firebaseController';
 
 const Form = t.form.Form;
 moment().locale('ID');
 
-// const BankEnum = t.enums({
-//     1234: 'BNI',
-//     2345: 'BCA',
-//     CASH: 'CASH',
-// })
+const ExpenseType = t.enums({
+    CREDIT: 'Credit',
+    CASH: 'Cash',
+});
 
 const ExpenseRecord = t.struct({
     description: t.refinement(t.String, (s) => s.length >= 3),
     amount: t.refinement(t.Number, (n) => n >= 100),
+    type: t.refinement(ExpenseType, (t) => t === 'CREDIT' || t === 'CASH'),
     recordDate: t.Date,
 });
 const ExpenseOptions = {
@@ -70,6 +74,9 @@ const ExpenseOptions = {
             config: {
                 format: (value) => value.toLocaleString()
             }
+        },
+        type: {
+            error: 'Please pick one of the available types',
         },
     }
 };
@@ -111,15 +118,17 @@ class ExpenseScreen extends React.Component {
                 description: value.description,
                 amount: value.amount,
                 recordDate: new Date(value.recordDate).getTime(),
+                type: value.type,
             }).then(() => {
                 this.setState({
                     formValues: '',
                 });
-                Toast.show({
-                    text: 'The expense record has been added!',
-                    duration: 2000,
-                    type: 'success',
-                });
+                ToastAndroid.show('The expense record has been addded!', ToastAndroid.LONG);
+                // Toast.show({
+                //     text: 'The expense record has been added!',
+                //     duration: 2000,
+                //     type: 'success',
+                // });
             });
         }
     }
@@ -149,6 +158,11 @@ class ExpenseScreen extends React.Component {
                             value={this.state.formValues}
                             options={ExpenseOptions}
                         />
+                        <PhotoUpload>
+                            <Image
+                                source={require('./static/upload_icon.png')}
+                            />
+                        </PhotoUpload>
                         <Button primary rounded block iconLeft onPress={this.handleSave}>
                             <Icon style={{ color: '#fff', fontSize: 23 }} name='md-document' />
                             <Text> Save </Text>
